@@ -2,7 +2,7 @@
     Author: Leonardo Citraro
     Company:
     Filename: utils.hpp
-    Last modifed:   04.04.2017 by Leonardo Citraro
+    Last modifed:   06.04.2017 by Leonardo Citraro
     Description:    Extended three-dimensional rotation invariant local binary patterns (LBP)
     * 
     Please cite the article:    L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
@@ -50,44 +50,6 @@ using Array2D = std::array<std::array<T,N>,M>;
 template<typename T, int M>
 using Array1D = std::array<T,M>;
 
-/*
-double compute_rounded_mean(const double* v, const int N) {
-    int mean = 0;
-    for(int i=0; i<N; ++i)
-        mean += v[i];
-    return round(mean/N);
-}
-
-void sampling_NI(int* out, const double* in, const double th, const int N) {
-    for(int i=0; i<N; ++i){
-        // round() avoids precision errors
-        if(round(in[i]) >= th)
-            out[i] = 1;
-        else
-            out[i] = 0;
-    }
-}
-
-void sampling_RD(int* out, const double* in1, const double* in2, const int N) {
-    for(int i=0; i<N; ++i){
-        // round() avoids precision errors
-        if(round(in1[i]-in2[i]) >= 0)
-            out[i] = 1;
-        else
-            out[i] = 0;
-    }
-}
-
-int sum_active_voxels(const int* g, const int N) {
-    int sum = 0;
-    for(int i=0; i<N; ++i){
-        if(g[i] == 1)
-            sum++;
-    }
-    return sum;
-}
-*/
-
 template<typename T, size_t N>
 auto compute_mean(const Array1D<T,N>& v) {
     T mean = std::accumulate(std::cbegin(v), std::cend(v), 0)/N;
@@ -126,9 +88,6 @@ auto sampling_RD(const Array1D<T,N>& in1, const T in2) {
 
 template<size_t N>
 int sum_active_voxels(const Array1D<bool,N>& g) {
-    // this works because our input vector is composed of 0s and 1s only!!
-    //return std::accumulate(std::cbegin(g), std::cend(g), 0);
-    
     return std::accumulate(std::cbegin(g), std::cend(g), 0, [&](const int init, const bool x){
                 if(x)
                     return init + 1;
@@ -137,7 +96,7 @@ int sum_active_voxels(const Array1D<bool,N>& g) {
             });
 }
 
-
+// for debugging
 template<typename T, size_t N>
 void print(const std::string& name, const Array1D<T,N>& v) {
     std::cout << name << ": [";
