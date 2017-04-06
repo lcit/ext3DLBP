@@ -16,7 +16,7 @@ Image and Vision Computing (2017)
 - Boost.Python to compile the wrappers
 
 ### Compilation
-In almost all folders there is a `build.sh` and `run.sh` Linux scripts. The first compiles the sources, the latter runs the example codes.
+In almost every folder there is a `build.sh` and a `run.sh` scripts. The first compiles the sources, the latter runs the example codes if applicable.
 
 ### Example usage
 
