@@ -5,17 +5,17 @@ C++ - Extended three-dimensional rotation invariant local binary patterns (LBP)
 ```
 L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
 Extended three-dimensional rotation invariant local binary patterns, 
-Image and Vision Computing (2017), 
-http://dx.doi.org/10.1016/j.imavis.2017.03.004
+Image and Vision Computing (2017)
 ```
 
 ### Prerequisites
 
-- CMake to copile the examples
-- Boost.Python for the wrappers
+- CMake to compile the examples
+- Boost.Python to compile the wrappers
 
 ### Example usage
 
+###### A C++ example
 ```C++
 #include "ext3DLBP.hpp"
 #include <iostream>
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
     return 0;
 }
 ```
-
+###### A Python example
 ```Python
 import numpy as np
 import ext3DLBPpy
