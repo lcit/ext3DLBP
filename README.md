@@ -1,6 +1,8 @@
 # ext3DLBP
 
-C++ - Extended three-dimensional rotation invariant local binary patterns (LBP)
+C++ - Extended three-dimensional rotation invariant local binary patterns (LBP).
+
+Header-only implementation of the Extended 3D LBP with python wrappers.
 
 ```
 L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
