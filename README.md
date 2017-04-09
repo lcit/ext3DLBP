@@ -12,8 +12,9 @@ Image and Vision Computing (2017)
 
 ### Prerequisites
 
-- CMake to compile the examples
-- Boost.Python to compile the wrappers
+- CMake (to compile the examples)
+- Boost.Python (to compile the wrappers)
+- OpenCV (to compile the example convert_3d_texture_cpp)
 
 ### Compilation
 In almost every folder there is a `build.sh` and a `run.sh` scripts. The first compiles the sources, the latter runs the example codes if applicable.

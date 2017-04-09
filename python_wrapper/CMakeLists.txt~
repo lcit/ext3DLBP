@@ -7,15 +7,16 @@ find_package(PythonInterp REQUIRED)
 find_package(PythonLibs REQUIRED)
 
 if(APPLE AND ${PYTHON_VERSION_MAJOR} EQUAL 3)
-    find_package(Boost COMPONENTS python3)
+    find_package(Boost 1.58 EXACT COMPONENTS python3)
 else()
-    find_package(Boost COMPONENTS python)
+    find_package(Boost 1.58 EXACT COMPONENTS python)
 endif()
 
 include_directories(. ../include ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
+#link_libraries(${Boost_LIBRARIES} ${PYTHON_LIBRARIES}) # Deprecated but so convenient!
 
 add_library(ext3DLBPpy SHARED ext3DLBPpy.cpp)
 set_target_properties(ext3DLBPpy PROPERTIES PREFIX "")

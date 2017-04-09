@@ -2,7 +2,7 @@
     Author: Leonardo Citraro
     Company:
     Filename: ext3DLBP.hpp
-    Last modifed:   06.04.2017 by Leonardo Citraro
+    Last modifed:   09.04.2017 by Leonardo Citraro
     Description:    Extended three-dimensional rotation invariant local binary patterns (LBP)
     * 
     Please cite the article:    L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
@@ -45,11 +45,19 @@ namespace ext3DLBP {
 
     class CI_LBP {
     public:
-        const double mur;
+        //const double mur;
+        const int mur;
+        const static int bins = 2;
         CI_LBP(const double mur) : mur(mur) {}
         CI_LBP() : mur(128.0) {}
         CI_LBP(const CI_LBP& other) : mur(other.mur) {}
         CI_LBP(CI_LBP&& other) : mur(other.mur) {}
+        virtual int convert(const int value) {
+            if(value >= mur)
+                return 1;
+            else
+                return 0;
+        }
         virtual int convert(const Array3D<int,3,3,3>& array) {
             if(array[1][1][1] >= mur)
                 return 1;
@@ -75,9 +83,11 @@ namespace ext3DLBP {
     public:
         const static int P = Vertexes::P;
         const static int O = Vertexes::O;
+        const static int bins = Vertexes::bins;
         const static int R = Radius::R;
         const static int K = R*2+1;
-        const double mur;
+        //const double mur;
+        const int mur;
         const int V;
         NI_LBP(const double mur, const int V) : mur(mur), V(V) {}
         NI_LBP() : mur(128.0), V(3) {}
@@ -106,9 +116,11 @@ namespace ext3DLBP {
     public:
         const static int P = Vertexes::P;
         const static int O = Vertexes::O;
+        const static int bins = Vertexes::bins;
         const static int R = Radius::R;
         const static int K = R*2+1;
-        const double mur;
+        //const double mur;
+        const int mur;
         const int V;
         RD_LBP(const double mur, const int V) : mur(mur), V(V) {}
         RD_LBP() : mur(128.0), V(3) {}
@@ -137,9 +149,11 @@ namespace ext3DLBP {
     public:
         const static int P = Vertexes::P;
         const static int O = Vertexes::O;
+        const static int bins = Vertexes::bins;
         const static int R = Radius::R;
         const static int K = R*2+1;
-        const double mur;
+        //const double mur;
+        const int mur;
         const int V;
         NI_RD_LBP(const double mur, const int V) : mur(mur), V(V) {}
         NI_RD_LBP() : mur(128.0), V(3) {}
@@ -184,9 +198,11 @@ namespace ext3DLBP {
     public:
         const static int P = Vertexes::P;
         const static int O = Vertexes::O;
+        const static int bins = Vertexes::bins;
         const static int R = Radius::R;
         const static int K = R*2+1;
-        const double mur;
+        //const double mur;
+        const int mur;
         const int V;
         NI_RD_CI_LBP(const double mur, const int V) : mur(mur), V(V) {}
         NI_RD_CI_LBP() : mur(128.0), V(3) {}
@@ -221,7 +237,7 @@ namespace ext3DLBP {
                 LBPcode[1] = sum_active_voxels(g_RD);
             else
                 LBPcode[1] = P+1;
-            
+
             if(array[R][R][R] >= mur)
                 LBPcode[2] = 1;
             else

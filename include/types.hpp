@@ -34,20 +34,24 @@
 #ifndef __TYPES_HPP__
 #define __TYPES_HPP__
 
+// Vertexes
 struct P42g {
     const static int P = 42;
     const static int O = 6;
+    const static int bins = 44;
 };
 struct P92g {
     const static int P = 92;
     const static int O = 6;
+    const static int bins = 94;
 };
 struct P252g {
     const static int P = 252;
     const static int O = 6;
+    const static int bins = 254;
 };
 
-
+// Radius
 struct R1 {
     const static int R = 1;
     const static int K = R*2+1;
