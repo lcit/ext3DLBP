@@ -37,7 +37,14 @@
 
 #include <array>
 #include <algorithm>
+
 #include <iostream>
+
+#ifdef __APPLE__
+#include <numeric>
+#include <math.h>
+#endif
+
 
 template<typename T, int M, int N, int O>
 using Array3D = std::array<std::array<std::array<T,O>,N>,M>;
