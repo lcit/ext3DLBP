@@ -2,12 +2,12 @@
     Author: Leonardo Citraro
     Company:
     Filename: ext3DLBPpy.cpp
-    Last modifed:   09.04.2017 by Leonardo Citraro
+    Last modifed:   31.12.2018 by Leonardo Citraro
     Description:    Boost-Python wrappers
-    * 
+    *
     Please cite the article:    L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
-                                Extended three-dimensional rotation invariant local binary patterns, 
-                                Image and Vision Computing (2017), 
+                                Extended three-dimensional rotation invariant local binary patterns,
+                                Image and Vision Computing (2017),
                                 http://dx.doi.org/10.1016/j.imavis.2017.03.004
 
     ==========================================================================================
@@ -32,49 +32,114 @@
     ==========================================================================================
 */
 #include <Python.h>
-#include <boost/python.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/numeric.hpp>
+#include <boost/python/numpy.hpp>
 #include <numpy/ndarrayobject.h>
+#include <numpy/arrayobject.h>
 #include "ext3DLBP.hpp"
 
+using namespace std;
 using namespace ext3DLBP;
-using namespace boost::python;
+namespace p = boost::python;
+namespace np = boost::python::numpy;
+
+/**
+  *   @brief  This function deletes dynamically allocated memory
+  *           from python side when the data is no loguer required.
+  */
+template<typename T>
+inline void CapsuleDestructor(PyObject *ptr){
+    T *tmp = reinterpret_cast<T*>(PyCapsule_GetPointer(ptr, NULL));
+    if(tmp){
+        delete tmp;
+    }
+}
+
+template<typename T>
+inline np::ndarray make_ndarray(T* const ptr, const int H, const int W=0, const int D=0){
+
+    // figuring out the size of the array
+    int L;
+    if(W<=0 && D<=0){
+        L = H;
+    }else if(W<=0 && H<=0){
+        L = D;
+    }else if(H<=0 && D<=0){
+        L = H;
+    }else if(H<=0){
+        L = W*D;
+    }else if(W<=0){
+        L = H*D;
+    }else if(D<=0){
+        L = H*W;
+    }else{
+        L=H*W*D;
+    }
+
+    // The object owner is responsible for deleting the dynamic array from the python side
+    // This is the trick to prevent memory leaks!
+    p::object owner(p::handle<>((PyCapsule_New((void*)ptr, NULL,
+                                (PyCapsule_Destructor)&CapsuleDestructor<T>))));
+
+    // Creates a boost numpy array, this is the actual object we return to python
+    np::ndarray py_array = np::from_data(ptr,
+                                         np::dtype::get_builtin<T>(),
+                                         p::make_tuple(L),
+                                         p::make_tuple(sizeof(T)),
+                                         owner);
+
+    p::tuple shape;
+    if(H<=0){
+        shape = p::make_tuple(W,D);
+    }else if(W<=0){
+        shape = p::make_tuple(H,D);
+    }else if(D<=0){
+        shape = p::make_tuple(H,W);
+    }else{
+        shape = p::make_tuple(H,W,D);
+    }
+
+    py_array = py_array.reshape(shape);
+
+    return py_array;
+}
 
 template<typename T, size_t K>
-Array3D<T,K,K,K> convert_numpy_to_STL(const numeric::array& data) {
+Array3D<T,K,K,K> convert_numpy_to_STL(const np::ndarray& py_array) {
+    int H = py_array.shape(0);
+    int W = py_array.shape(1);
+    int D = py_array.shape(2);
+    int L = H*W*D;
     Array3D<T,K,K,K> array;
-    for(int k=0; k<K; ++k) {
-        for(int j=0; j<K; ++j) {
-            for(int i=0; i<K; ++i) {
-                array[i][j][k] = extract<T>(data[i][j][k]);
-            }
+    T* p_vector;
+    for(int k=0; k<D; ++k) {
+        for(int j=0; j<W; ++j) {
+            np::ndarray py_vector = p::extract<np::ndarray>(py_array[k][j]);
+            p_vector = reinterpret_cast<T*>(py_vector.get_data());
+            std::copy(p_vector, p_vector+H, array[k][j].begin());
         }
-    } 
+    }
+    delete p_vector;
     return array;
 }
 
 template<typename T, size_t K>
-Array3D<T,K,K,K> my_slice(const numeric::array& data, const int istart, const int jstart, const int kstart) {
+Array3D<T,K,K,K> my_slice(const np::ndarray& py_volume, const int istart, const int jstart, const int kstart) {
     Array3D<T,K,K,K> array;
     for(int k=0; k<K; ++k) {
         for(int j=0; j<K; ++j) {
             for(int i=0; i<K; ++i) {
-                array[i][j][k] = extract<T>(data[i+istart][j+jstart][k+kstart]);
+                array[i][j][k] = p::extract<T>(py_volume[i+istart][j+jstart][k+kstart]);
             }
         }
-    } 
+    }
     return array;
 }
 
-boost::python::tuple convert_to_python_return(const Array1D<int,2>& data) {
-    return boost::python::make_tuple(data[0], data[1]);
+p::tuple convert_to_tuple(const Array1D<int,2>& data) {
+    return p::make_tuple(data[0], data[1]);
 }
-boost::python::tuple convert_to_python_return(const Array1D<int,3>& data) {
-    return boost::python::make_tuple(data[0], data[1], data[2]);
-}
-int convert_to_python_return(const int data) {
-    return data;
+p::tuple convert_to_tuple(const Array1D<int,3>& data) {
+    return p::make_tuple(data[0], data[1], data[2]);
 }
 
 //=========================================================================
@@ -83,35 +148,36 @@ int convert_to_python_return(const int data) {
 struct CI_LBP_ : public CI_LBP {
     const static int bins = CI_LBP::bins;
     CI_LBP_(const double mur) : CI_LBP(mur) {}
-    auto convert(const boost::python::numeric::array data) {
-        int shape0 = extract<int>(data.attr("shape")[0]);
-        if(shape0 == 3)
-            return CI_LBP::convert(convert_numpy_to_STL<int,3>(data));
-        else if(shape0 == 5)
-            return CI_LBP::convert(convert_numpy_to_STL<int,5>(data));
-        else if(shape0 == 7)
-            return CI_LBP::convert(convert_numpy_to_STL<int,7>(data));
+    // converts a volume of size 3, 5 or 7 voxels
+    auto convert(const np::ndarray py_volume) {
+        int H = py_volume.shape(0);
+        if(H == 3)
+            return CI_LBP::convert(convert_numpy_to_STL<int,3>(py_volume));
+        else if(H == 5)
+            return CI_LBP::convert(convert_numpy_to_STL<int,5>(py_volume));
+        else if(H == 7)
+            return CI_LBP::convert(convert_numpy_to_STL<int,7>(py_volume));
     }
-    auto convert_3d_image(const numeric::array& image) {
-        int depth = extract<int>(image.attr("shape")[0]);
-        int cols = extract<int>(image.attr("shape")[1]);
-        int rows = extract<int>(image.attr("shape")[2]);
-        
-        npy_intp size[3] = {depth-2, cols-2, rows-2};
-        PyObject* arr_3d_1Obj = PyArray_SimpleNew(3, size, NPY_INT);
-        
-        for(int k=0; k<(depth); ++k) {
-            for(int j=0; j<(cols); ++j) {
-                for(int i=0; i<(rows); ++i) {
-                    int chunk = extract<int>(image[i][j][k]);
-                    int* ptr = (int*) PyArray_GETPTR3(arr_3d_1Obj, i, j, k);
-                    *ptr = CI_LBP::convert(chunk);
+    // converts a full volume
+    auto convert_3d_image(const np::ndarray& py_volume) {
+        int H = py_volume.shape(0);
+        int W = py_volume.shape(1);
+        int D = py_volume.shape(2);
+
+        int* out = new int[H*W*D];
+
+        for(int k=0; k<(D); ++k) {
+            for(int j=0; j<(W); ++j) {
+                for(int i=0; i<(H); ++i) {
+                    int chunk = p::extract<int>(py_volume[i][j][k]);
+                    out[k*D*W + j*W + i] = CI_LBP::convert(chunk);
                 }
             }
         }
-        boost::python::handle<> handle( arr_3d_1Obj );
-        boost::python::numeric::array arr_3d_1( handle );
-        return arr_3d_1;
+
+        np::ndarray py_out = make_ndarray(out,H,W,D);
+
+        return py_out;
     }
 };
 const int CI_LBP_::bins;
@@ -127,29 +193,29 @@ const int CI_LBP_::bins;
                                 const static int R = parent::R;\
                                 const static int K = parent::K;\
                                 fullname(const double mur, const int V) : parent(mur,V) {}\
-                                auto convert(const boost::python::numeric::array& data) {\
-                                    return convert_to_python_return(parent::convert(convert_numpy_to_STL<int,K>(data)));\
+                                auto convert(const np::ndarray& py_volume) {\
+                                    return parent::convert(convert_numpy_to_STL<int,K>(py_volume));\
                                 }\
-                                auto convert_3d_image(const numeric::array& image) {\
-                                    int depth = extract<int>(image.attr("shape")[0]);\
-                                    int cols = extract<int>(image.attr("shape")[1]);\
-                                    int rows = extract<int>(image.attr("shape")[2]);\
+                                auto convert_3d_image(const np::ndarray& py_volume) {\
+                                    int H = py_volume.shape(0);\
+                                    int W = py_volume.shape(1);\
+                                    int D = py_volume.shape(2);\
                                     \
-                                    npy_intp size[3] = {depth-2*R, cols-2*R, rows-2*R};\
-                                    PyObject* arr_3d_1Obj = PyArray_SimpleNew(3, size, NPY_INT);\
+                                    int H_ = H-2*R;\
+                                    int W_ = W-2*R;\
+                                    int D_ = D-2*R;\
+                                    int* out = new int[H_*W_*D_];\
                                     \
-                                    for(int k=0; k<(depth-K+1); ++k) {\
-                                        for(int j=0; j<(cols-K+1); ++j) {\
-                                            for(int i=0; i<(rows-K+1); ++i) {\
-                                                auto chunk = my_slice<int,K>(image,i,j,k);\
-                                                int* ptr = (int*) PyArray_GETPTR3(arr_3d_1Obj, i, j, k);\
-                                                *ptr = parent::convert(chunk);\
+                                    for(int k=0; k<D_; ++k) {\
+                                        for(int j=0; j<W_; ++j) {\
+                                            for(int i=0; i<H_; ++i) {\
+                                                auto chunk = my_slice<int,K>(py_volume,i,j,k);\
+                                                out[k*D_*W_ + j*W_ + i] = parent::convert(chunk);\
                                             }\
                                         }\
                                     }\
-                                    boost::python::handle<> handle( arr_3d_1Obj );\
-                                    boost::python::numeric::array arr_3d_1( handle );\
-                                    return arr_3d_1;\
+                                    np::ndarray py_out = make_ndarray(out,H_, W_, D_);\
+                                    return py_out;\
                                 }\
                             };\
                             const int fullname::P;\
@@ -165,35 +231,33 @@ const int CI_LBP_::bins;
                                 const static int R = parent::R;\
                                 const static int K = parent::K;\
                                 fullname(const double mur, const int V) : parent(mur,V) {}\
-                                auto convert(const boost::python::numeric::array& data) {\
-                                    return convert_to_python_return(parent::convert(convert_numpy_to_STL<int,K>(data)));\
+                                auto convert(const np::ndarray& py_volume) {\
+                                    return convert_to_tuple(parent::convert(convert_numpy_to_STL<int,K>(py_volume)));\
                                 }\
-                                auto convert_3d_image(const numeric::array& image) {\
-                                    int depth = extract<int>(image.attr("shape")[0]);\
-                                    int cols = extract<int>(image.attr("shape")[1]);\
-                                    int rows = extract<int>(image.attr("shape")[2]);\
+                                auto convert_3d_image(const np::ndarray& py_volume) {\
+                                    int H = py_volume.shape(0);\
+                                    int W = py_volume.shape(1);\
+                                    int D = py_volume.shape(2);\
                                     \
-                                    npy_intp size[3] = {depth-2*R, cols-2*R, rows-2*R};\
-                                    PyObject* arr_3d_1Obj = PyArray_SimpleNew(3, size, NPY_INT);\
-                                    PyObject* arr_3d_2Obj = PyArray_SimpleNew(3, size, NPY_INT);\
+                                    int H_ = H-2*R;\
+                                    int W_ = W-2*R;\
+                                    int D_ = D-2*R;\
+                                    int* out1 = new int[H_*W_*D_];\
+                                    int* out2 = new int[H_*W_*D_];\
                                     \
-                                    for(int k=0; k<(depth-K+1); ++k) {\
-                                        for(int j=0; j<(cols-K+1); ++j) {\
-                                            for(int i=0; i<(rows-K+1); ++i) {\
-                                                auto chunk = my_slice<int,K>(image,i,j,k);\
+                                    for(int k=0; k<D_; ++k) {\
+                                        for(int j=0; j<W_; ++j) {\
+                                            for(int i=0; i<H_; ++i) {\
+                                                auto chunk = my_slice<int,K>(py_volume,i,j,k);\
                                                 Array1D<int,2> codes = parent::convert(chunk);\
-                                                int* ptr = (int*) PyArray_GETPTR3(arr_3d_1Obj, i, j, k);\
-                                                *ptr = codes[0];\
-                                                ptr = (int*) PyArray_GETPTR3(arr_3d_2Obj, i, j, k);\
-                                                *ptr = codes[1];\
+                                                out1[k*D_*W_ + j*W_ + i] = codes[0];\
+                                                out2[k*D_*W_ + j*W_ + i] = codes[1];\
                                             }\
                                         }\
                                     }\
-                                    boost::python::handle<> handle1( arr_3d_1Obj );\
-                                    boost::python::numeric::array arr_3d_1( handle1 );\
-                                    boost::python::handle<> handle2( arr_3d_2Obj );\
-                                    boost::python::numeric::array arr_3d_2( handle2 );\
-                                    return make_tuple(arr_3d_1, arr_3d_2);\
+                                    np::ndarray py_out1 = make_ndarray(out1, H_, W_, D_);\
+                                    np::ndarray py_out2 = make_ndarray(out2, H_, W_, D_);\
+                                    return p::make_tuple(py_out1, py_out2);\
                                 }\
                             };\
                             const int fullname::P;\
@@ -201,7 +265,7 @@ const int CI_LBP_::bins;
                             const int fullname::O;\
                             const int fullname::R;\
                             const int fullname::K;\
-                            
+
 #define wrapper_class_3     struct fullname : public parent {\
                                 const static int P = parent::P;\
                                 const static int O = parent::O;\
@@ -209,40 +273,36 @@ const int CI_LBP_::bins;
                                 const static int R = parent::R;\
                                 const static int K = parent::K;\
                                 fullname(const double mur, const int V) : parent(mur,V) {}\
-                                auto convert(const boost::python::numeric::array& data) {\
-                                    return convert_to_python_return(parent::convert(convert_numpy_to_STL<int,K>(data)));\
+                                auto convert(const np::ndarray& py_volume) {\
+                                    return convert_to_tuple(parent::convert(convert_numpy_to_STL<int,K>(py_volume)));\
                                 }\
-                                auto convert_3d_image(const numeric::array& image) {\
-                                    int depth = extract<int>(image.attr("shape")[0]);\
-                                    int cols = extract<int>(image.attr("shape")[1]);\
-                                    int rows = extract<int>(image.attr("shape")[2]);\
+                                auto convert_3d_image(const np::ndarray& py_volume) {\
+                                    int H = py_volume.shape(0);\
+                                    int W = py_volume.shape(1);\
+                                    int D = py_volume.shape(2);\
                                     \
-                                    npy_intp size[3] = {depth-2*R, cols-2*R, rows-2*R};\
-                                    PyObject* arr_3d_1Obj = PyArray_SimpleNew(3, size, NPY_INT);\
-                                    PyObject* arr_3d_2Obj = PyArray_SimpleNew(3, size, NPY_INT);\
-                                    PyObject* arr_3d_3Obj = PyArray_SimpleNew(3, size, NPY_INT);\
+                                    int H_ = H-2*R;\
+                                    int W_ = W-2*R;\
+                                    int D_ = D-2*R;\
+                                    int* out1 = new int[H_*W_*D_];\
+                                    int* out2 = new int[H_*W_*D_];\
+                                    int* out3 = new int[H_*W_*D_];\
                                     \
-                                    for(int k=0; k<(depth-K+1); ++k) {\
-                                        for(int j=0; j<(cols-K+1); ++j) {\
-                                            for(int i=0; i<(rows-K+1); ++i) {\
-                                                auto chunk = my_slice<int,K>(image,i,j,k);\
+                                    for(int k=0; k<D_; ++k) {\
+                                        for(int j=0; j<W_; ++j) {\
+                                            for(int i=0; i<H_; ++i) {\
+                                                auto chunk = my_slice<int,K>(py_volume,i,j,k);\
                                                 Array1D<int,3> codes = parent::convert(chunk);\
-                                                int* ptr = (int*) PyArray_GETPTR3(arr_3d_1Obj, i, j, k);\
-                                                *ptr = codes[0];\
-                                                ptr = (int*) PyArray_GETPTR3(arr_3d_2Obj, i, j, k);\
-                                                *ptr = codes[1];\
-                                                ptr = (int*) PyArray_GETPTR3(arr_3d_3Obj, i, j, k);\
-                                                *ptr = codes[2];\
+                                                out1[k*D_*W_ + j*W_ + i] = codes[0];\
+                                                out2[k*D_*W_ + j*W_ + i] = codes[1];\
+                                                out3[k*D_*W_ + j*W_ + i] = codes[2];\
                                             }\
                                         }\
                                     }\
-                                    boost::python::handle<> handle1( arr_3d_1Obj );\
-                                    boost::python::numeric::array arr_3d_1( handle1 );\
-                                    boost::python::handle<> handle2( arr_3d_2Obj );\
-                                    boost::python::numeric::array arr_3d_2( handle2 );\
-                                    boost::python::handle<> handle3( arr_3d_3Obj );\
-                                    boost::python::numeric::array arr_3d_3( handle3 );\
-                                    return make_tuple(arr_3d_1, arr_3d_2, arr_3d_3);\
+                                    np::ndarray py_out1 = make_ndarray(out1,H_, W_, D_);\
+                                    np::ndarray py_out2 = make_ndarray(out2,H_, W_, D_);\
+                                    np::ndarray py_out3 = make_ndarray(out3,H_, W_, D_);\
+                                    return p::make_tuple(py_out1, py_out2, py_out3);\
                                 }\
                             };\
                             const int fullname::P;\
@@ -250,7 +310,7 @@ const int CI_LBP_::bins;
                             const int fullname::O;\
                             const int fullname::R;\
                             const int fullname::K;\
-                            
+
 // P42g
 #define fullname NI_LBP_P42g_R1
 #define parent NI_LBP<P42g, R1>
@@ -387,12 +447,11 @@ wrapper_class_3
 wrapper_class_3
 
 BOOST_PYTHON_MODULE(ext3DLBPpy) {
-    boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
-    
-    import_array();
-    
+    Py_Initialize();
+    np::initialize();
+
     // CI-LBP
-    class_<CI_LBP_>("CI_LBP",init<double>())
+    p::class_<CI_LBP_>("CI_LBP",p::init<double>())
         .def_readonly("mur", &CI_LBP_::mur)
         .def_readonly("bins", &CI_LBP_::bins)
         .def("convert", &CI_LBP_::convert)
@@ -400,7 +459,7 @@ BOOST_PYTHON_MODULE(ext3DLBPpy) {
 
 #define STRINGIZE_NX(A) #A
 #define STRINGIZE(A) STRINGIZE_NX(A)
-#define boost_python_definition class_<fullname>(STRINGIZE(fullname),init<double, int>())\
+#define boost_python_definition p::class_<fullname>(STRINGIZE(fullname),p::init<double, int>())\
                                 .def_readonly("P", &fullname::P)\
                                 .def_readonly("O", &fullname::O)\
                                 .def_readonly("bins", &fullname::bins)\
@@ -416,7 +475,7 @@ boost_python_definition
 
 #define fullname NI_LBP_P42g_R2
 boost_python_definition
-        
+
 
 #define fullname NI_LBP_P92g_R1
 boost_python_definition
@@ -426,7 +485,7 @@ boost_python_definition
 
 #define fullname NI_LBP_P92g_R3
 boost_python_definition
-        
+
 
 #define fullname NI_LBP_P252g_R2
 boost_python_definition
@@ -440,8 +499,8 @@ boost_python_definition
 
 #define fullname RD_LBP_P42g_R2
 boost_python_definition
-        
-        
+
+
 #define fullname RD_LBP_P92g_R1
 boost_python_definition
 
@@ -450,22 +509,22 @@ boost_python_definition
 
 #define fullname RD_LBP_P92g_R3
 boost_python_definition
-        
-    
+
+
 #define fullname RD_LBP_P252g_R2
 boost_python_definition
 
 #define fullname RD_LBP_P252g_R3
 boost_python_definition
-        
+
 // NI-RD-LBP
 #define fullname NI_RD_LBP_P42g_R1
 boost_python_definition
 
 #define fullname NI_RD_LBP_P42g_R2
 boost_python_definition
-        
-    
+
+
 #define fullname NI_RD_LBP_P92g_R1
 boost_python_definition
 
@@ -474,22 +533,22 @@ boost_python_definition
 
 #define fullname NI_RD_LBP_P92g_R3
 boost_python_definition
-        
-        
+
+
 #define fullname NI_RD_LBP_P252g_R2
 boost_python_definition
 
 #define fullname NI_RD_LBP_P252g_R3
 boost_python_definition
-        
-    
+
+
 // NI-RD-CI-LBP
 #define fullname NI_RD_CI_LBP_P42g_R1
 boost_python_definition
 
 #define fullname NI_RD_CI_LBP_P42g_R2
 boost_python_definition
-        
+
 
 #define fullname NI_RD_CI_LBP_P92g_R1
 boost_python_definition
@@ -499,8 +558,8 @@ boost_python_definition
 
 #define fullname NI_RD_CI_LBP_P92g_R3
 boost_python_definition
-        
-    
+
+
 
 #define fullname NI_RD_CI_LBP_P252g_R2
 boost_python_definition
@@ -509,12 +568,3 @@ boost_python_definition
 boost_python_definition
 
 };
-
-
-
-
-
-
-
-
-

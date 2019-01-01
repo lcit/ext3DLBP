@@ -4,10 +4,10 @@
     Filename: utils.hpp
     Last modifed:   06.04.2017 by Leonardo Citraro
     Description:    Extended three-dimensional rotation invariant local binary patterns (LBP)
-    * 
+    *
     Please cite the article:    L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
-                                Extended three-dimensional rotation invariant local binary patterns, 
-                                Image and Vision Computing (2017), 
+                                Extended three-dimensional rotation invariant local binary patterns,
+                                Image and Vision Computing (2017),
                                 http://dx.doi.org/10.1016/j.imavis.2017.03.004
 
     ==========================================================================================
@@ -36,6 +36,7 @@
 #define __UTILS_HPP__
 
 #include <array>
+#include <numeric>
 #include <algorithm>
 #include <iostream>
 
@@ -60,7 +61,7 @@ auto compute_mean(const Array1D<T,N>& v) {
 template<typename T, size_t N>
 auto sampling_NI(const Array1D<T,N>& in, const T th) {
     Array1D<bool,N> out;
-    std::transform(std::cbegin(in), std::cend(in), std::begin(out), [&th](const T x) { 
+    std::transform(std::cbegin(in), std::cend(in), std::begin(out), [&th](const T x) {
         if(round(x) >= th)
             return true;
         else
@@ -72,7 +73,7 @@ auto sampling_NI(const Array1D<T,N>& in, const T th) {
 template<typename T, size_t N>
 auto sampling_RD(const Array1D<T,N>& in1, const Array1D<T,N>& in2) {
     Array1D<bool,N> out;
-    std::transform(std::cbegin(in1), std::cend(in1), std::cbegin(in2), std::begin(out), [](const T x1, const T x2) { 
+    std::transform(std::cbegin(in1), std::cend(in1), std::cbegin(in2), std::begin(out), [](const T x1, const T x2) {
         if(round(x1-x2) >= 0)
             return true;
         else

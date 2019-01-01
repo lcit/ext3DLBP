@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC  -std=c++14 -O2 -Wp,-w  -shared -Wl,-soname,ext3DLBPpy.so -o ext3DLBPpy.so CMakeFiles/ext3DLBPpy.dir/ext3DLBPpy.cpp.o -lboost_python -lpython2.7 
