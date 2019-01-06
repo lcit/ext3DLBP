@@ -2,7 +2,7 @@
     Author: Leonardo Citraro
     Company:
     Filename: ext3DLBPpy.cpp
-    Last modifed:   31.12.2018 by Leonardo Citraro
+    Last modifed:   6.1.2019 by Leonardo Citraro
     Description:    Boost-Python wrappers
     *
     Please cite the article:    L. Citraro, S. Mahmoodi, A. Darekar, B. Vollmer,
@@ -105,20 +105,16 @@ inline np::ndarray make_ndarray(T* const ptr, const int H, const int W=0, const 
 
 template<typename T, size_t K>
 Array3D<T,K,K,K> convert_numpy_to_STL(const np::ndarray& py_array) {
-    int H = py_array.shape(0);
-    int W = py_array.shape(1);
-    int D = py_array.shape(2);
-    int L = H*W*D;
     Array3D<T,K,K,K> array;
     T* p_vector;
-    for(int k=0; k<D; ++k) {
-        for(int j=0; j<W; ++j) {
-            np::ndarray py_vector = p::extract<np::ndarray>(py_array[k][j]);
-            p_vector = reinterpret_cast<T*>(py_vector.get_data());
-            std::copy(p_vector, p_vector+H, array[k][j].begin());
+    for(int k=0; k<K; ++k) {
+        for(int j=0; j<K; ++j) {           
+            for(int i=0; i<K; ++i) {
+                T x = p::extract<T>(py_array[i][j][k]);
+                array[i][j][k] = x;
+            }
         }
     }
-    delete p_vector;
     return array;
 }
 

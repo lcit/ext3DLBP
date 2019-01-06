@@ -37,36 +37,40 @@ import os
 sys.path.append(os.getcwd())
 import numpy as np
 import ext3DLBPpy
-'''
-# convert single chunk
-a = np.zeros((3,3,3), dtype=np.int)
-lbp = ext3DLBPpy.NI_LBP_P42g_R1(128.0, 3)
-print "R:{} K:{} P:{} O:{} mur:{} V:{}".format(lbp.R,lbp.K,lbp.P,lbp.O,lbp.mur,lbp.V)
-print lbp.convert(a)
 
-a = np.zeros((5,5,5), dtype=np.int)
+# convert single chunk
+a = np.zeros((3,3,3), dtype=np.int32)
+lbp = ext3DLBPpy.NI_LBP_P42g_R1(128.0, 3)
+print("R:{} K:{} P:{} O:{} mur:{} V:{}".format(lbp.R,lbp.K,lbp.P,lbp.O,lbp.mur,lbp.V))
+print(lbp.convert(a))
+
+'''
+a = np.zeros((5,5,5), dtype=np.int32)
 lbp = ext3DLBPpy.NI_LBP_P42g_R2(128.0, 3)
 print lbp.convert(a)
-
-a = np.zeros((5,5,5), dtype=np.int)
+'''
+'''
+a = np.zeros((5,5,5), dtype=np.int32)+130
 lbp = ext3DLBPpy.CI_LBP(128.0)
-print lbp.convert(a)
+print(lbp.convert(a))
 
-a = np.zeros((3,3,3), dtype=np.int)
+
+a = np.zeros((3,3,3), dtype=np.int32)
 lbp = ext3DLBPpy.NI_RD_LBP_P42g_R1(128.0, 3)
 print lbp.convert(a)
 
-a = np.zeros((3,3,3), dtype=np.int)
+a = np.zeros((3,3,3), dtype=np.int32)
 lbp = ext3DLBPpy.NI_RD_CI_LBP_P42g_R1(128.0, 3)
 print lbp.convert(a)
 
-a = np.zeros((7,7,7), dtype=np.int)
+a = np.zeros((7,7,7), dtype=np.int32)
 lbp = ext3DLBPpy.NI_RD_CI_LBP_P42g_R1(128.0, 3)
 print lbp.convert(a)
-'''
+
 # convert whole 3d image
-a = np.random.randint(0,255,(64,64,64), dtype=np.int)
+a = np.random.randint(0,255,(64,64,64), dtype=np.int32)
 lbp = ext3DLBPpy.NI_RD_CI_LBP_P92g_R2(128.0, 3)
 (imgNI,_,_) = lbp.convert_3d_image(a)
 #print "shapes=(imgNI,imgRD,imgCI) = ({},{},{})".format(imgNI.shape,imgRD.shape,imgCI.shape)
+'''
 

@@ -12,10 +12,12 @@ endif()
 
 find_package(PythonInterp)
 
+message("some info: UNIX=${UNIX}, APPLE=${APPLE}, PYTHON_VERSION=${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
+
 if (PYTHONINTERP_FOUND)
   if (UNIX AND NOT APPLE)
     if (PYTHON_VERSION_MAJOR EQUAL 3)
-        find_package(Boost COMPONENTS python${PYTHON_VERSION_SUFFIX} numpy${PYTHON_VERSION_SUFFIX})
+        find_package(Boost COMPONENTS python${PYTHON_VERSION_MAJOR} numpy${PYTHON_VERSION_MAJOR})
         find_package(PythonInterp 3)
         find_package(PythonLibs 3 REQUIRED)
     else()

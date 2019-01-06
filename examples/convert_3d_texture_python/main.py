@@ -42,7 +42,7 @@ import matplotlib.pyplot as plt
 import ext3DLBPpy
 
 def from_images_to_3D_array(directory, size):
-    img_3d = np.empty(size, dtype=np.int)
+    img_3d = np.empty(size, dtype=np.int32)
     for dirName, subdirList, fileList in os.walk(directory):
         if len(subdirList) > 1:
             raise AssertionError('There are multiple directories in this path!!') 
@@ -51,7 +51,7 @@ def from_images_to_3D_array(directory, size):
                 index_2d_image = int(filename.split('\\')[-1].split('.')[0])
                 img_array = np.array(Image.open(os.path.join(dirName,filename)).convert(mode='L'))
                 img_3d[:,:,index_2d_image] = img_array
-    return img_3d
+    return np.int32(img_3d)
     
 def construct_histograms(img_3d_NI, img_3d_RD, img_3d_CI, bins):
     (hist1, edges) = np.histogram(img_3d_NI, bins=np.arange(0,bins+1), density=False)       
