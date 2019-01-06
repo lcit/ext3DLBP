@@ -39,6 +39,7 @@
 #include <numeric>
 #include <algorithm>
 #include <iostream>
+#include <math.h>
 
 template<typename T, int M, int N, int O>
 using Array3D = std::array<std::array<std::array<T,O>,N>,M>;

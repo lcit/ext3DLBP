@@ -24,8 +24,8 @@ cd test_functional
 ./run.sh
 ```
 ### Build Python wrapper
-Go to section `Installing Boost.Python`
-Go to section `Installing OpenCV + Contrib + FFmpeg`
+- Go to section `Installing Boost.Python`
+- Go to section `Installing OpenCV + Contrib + FFmpeg`
 ```
 cd python_wrapper
 ./build.sh
