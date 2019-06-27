@@ -166,7 +166,7 @@ struct CI_LBP_ : public CI_LBP {
             for(int j=0; j<(W); ++j) {
                 for(int i=0; i<(H); ++i) {
                     int chunk = p::extract<int>(py_volume[i][j][k]);
-                    out[k*D*W + j*W + i] = CI_LBP::convert(chunk);
+                    out[k*W*H + j*H + i] = CI_LBP::convert(chunk);
                 }
             }
         }
@@ -206,7 +206,7 @@ const int CI_LBP_::bins;
                                         for(int j=0; j<W_; ++j) {\
                                             for(int i=0; i<H_; ++i) {\
                                                 auto chunk = my_slice<int,K>(py_volume,i,j,k);\
-                                                out[k*D_*W_ + j*W_ + i] = parent::convert(chunk);\
+                                                out[k*W_*H_ + j*H_ + i] = parent::convert(chunk);\                                           
                                             }\
                                         }\
                                     }\
@@ -246,8 +246,8 @@ const int CI_LBP_::bins;
                                             for(int i=0; i<H_; ++i) {\
                                                 auto chunk = my_slice<int,K>(py_volume,i,j,k);\
                                                 Array1D<int,2> codes = parent::convert(chunk);\
-                                                out1[k*D_*W_ + j*W_ + i] = codes[0];\
-                                                out2[k*D_*W_ + j*W_ + i] = codes[1];\
+                                                out1[k*W_*H_ + j*H_ + i] = codes[0];\
+                                                out2[k*W_*H_ + j*H_ + i] = codes[1];\
                                             }\
                                         }\
                                     }\
@@ -288,10 +288,10 @@ const int CI_LBP_::bins;
                                         for(int j=0; j<W_; ++j) {\
                                             for(int i=0; i<H_; ++i) {\
                                                 auto chunk = my_slice<int,K>(py_volume,i,j,k);\
-                                                Array1D<int,3> codes = parent::convert(chunk);\
-                                                out1[k*D_*W_ + j*W_ + i] = codes[0];\
-                                                out2[k*D_*W_ + j*W_ + i] = codes[1];\
-                                                out3[k*D_*W_ + j*W_ + i] = codes[2];\
+                                                Array1D<int,3> codes = parent::convert(chunk);\                                                
+                                                out1[k*W_*H_ + j*H_ + i] = codes[0];\
+                                                out2[k*W_*H_ + j*H_ + i] = codes[1];\
+                                                out3[k*W_*H_ + j*H_ + i] = codes[2];\
                                             }\
                                         }\
                                     }\
@@ -306,6 +306,7 @@ const int CI_LBP_::bins;
                             const int fullname::O;\
                             const int fullname::R;\
                             const int fullname::K;\
+                               
 
 // P42g
 #define fullname NI_LBP_P42g_R1
